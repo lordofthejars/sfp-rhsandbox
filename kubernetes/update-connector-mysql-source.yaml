@@ -1,0 +1,27 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: update-mysql-source-connector
+  labels:
+    app: update-mysql-source-connector
+    app.kubernetes.io/part-of: sfp-cdc-jobs
+spec:
+  template:
+    spec:
+      containers:
+      - name: update-mysql-source-connector
+        image: quay.io/debezium/tooling:1.2
+        command: [
+          "bash","/home/update_connector.sh","petclinic-owners-pets-mysql-src","mysql_dbz_source_connector_patched.json"
+        ]
+        volumeMounts:
+            - name: connectors-definition
+              mountPath: /home
+
+      restartPolicy: OnFailure
+      volumes:
+        - name: connectors-definition
+          configMap:
+            name: connectors-config
+  backoffLimit: 5
