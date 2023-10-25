@@ -27,7 +27,7 @@ read -p "inspect owners data in kafka originating from monolith's mysql"
 
 kubectl run kafka-consumer -ti --image=quay.io/strimzi/kafka:0.33.0-kafka-3.3.2 --rm=true --restart=Never -- bin/kafka-console-consumer.sh --bootstrap-server kafka:9092 --topic mysql1.petclinic.owners --from-beginning
 
-read -p "inspect pets data in kafka originating from monolith's mysql"
+read -p "inspect pets data in kafka originating from monolith's mysql [Update owner]"
 
 kubectl run kafka-consumer -ti --image=quay.io/strimzi/kafka:0.33.0-kafka-3.3.2 --rm=true --restart=Never -- bin/kafka-console-consumer.sh --bootstrap-server kafka:9092 --topic mysql1.petclinic.pets --from-beginning
 
@@ -47,9 +47,21 @@ read -p "inspect owners data in mongodb collection backing the microservice"
 
 kubectl run mongo-query -ti --image=quay.io/hgrahsl/mongo:6.0.5 --rm=true --restart=Never -- mongosh mongodb:27017 --eval "use petclinic" --eval "db.getCollection('kstreams.owners-with-pets').find()"
 
+read -p "inspect owners data in MySQL"
+
+kubectl run mysqlcli -it --image=quay.io/hgrahsl/mysql:5.7.40 --rm=true --restart=Never -- mysql -h mysql -u root -pdebezium -e "select * from petclinic.owners;"
+
 read -p "DEMO STEP 4: change proxy config to route owner reads to microservice"
 
 kubectl patch deployment nginx --patch-file kubernetes/patch-nginx-ms-read.yaml
+
+read -p "inspect owners data in MySQL [update owner]"
+
+kubectl run mysqlcli -it --image=quay.io/hgrahsl/mysql:5.7.40 --rm=true --restart=Never -- mysql -h mysql -u root -pdebezium -e "select * from petclinic.owners;"
+
+read -p "inspect owners data in mongodb collection backing the microservice"
+
+kubectl run mongo-query -ti --image=quay.io/hgrahsl/mongo:6.0.5 --rm=true --restart=Never -- mongosh mongodb:27017 --eval "use petclinic" --eval "db.getCollection('kstreams.owners-with-pets').find()"
 
 read -p "DEMO STEP 5: change proxy config to route owner writes to microservice"
 
@@ -62,11 +74,19 @@ kubectl apply -f kubernetes/update-connector-mysql-source.yaml
 read -p "DEMO STEP 7: register MongoDB source connector for owners-with-pets collection"
 kubectl apply -f kubernetes/create-connector-mongodb-source.yaml
 
-read -p "inspect owners data in kafka originating from microservice's mongodb"
+read -p "inspect owners data in kafka originating from microservice's mongodb [update owner]"
 
 kubectl run kafka-consumer -ti --image=quay.io/strimzi/kafka:0.33.0-kafka-3.3.2 --rm=true --restart=Never -- bin/kafka-console-consumer.sh --bootstrap-server kafka:9092 --topic mongodb.petclinic.kstreams.owners-with-pets --from-beginning
 
 read -p "DEMO STEP 8: register MySQL JDBC sink connector for owners table"
 kubectl apply -f kubernetes/create-connector-mysql-sink.yaml
+
+read -p "inspect owners data in mongodb collection backing the microservice [update owner]"
+
+kubectl run mongo-query -ti --image=quay.io/hgrahsl/mongo:6.0.5 --rm=true --restart=Never -- mongosh mongodb:27017 --eval "use petclinic" --eval "db.getCollection('kstreams.owners-with-pets').find()"
+
+read -p "inspect owners data in MySQL"
+
+kubectl run mysqlcli -it --image=quay.io/hgrahsl/mysql:5.7.40 --rm=true --restart=Never -- mysql -h mysql -u root -pdebezium -e "select * from petclinic.owners;"
 
 read -p "Done :-)"
